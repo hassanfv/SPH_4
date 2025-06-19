@@ -9,6 +9,8 @@ df = pd.read_csv("out.csv")
 x = df["x"]
 y = df["y"]
 
+#plt.figure(figsize = (16, 12))
+
 plt.scatter(x, y, c = 'k', s = 3)
 plt.show()
 
