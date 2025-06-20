@@ -129,7 +129,7 @@ def odeint(ystart, x1, x2, h1):
 
   #h = np.sign(h1) * (x2 - x1) # This is wrong. I made a worng conversion from C++ to python !
   h = sign(h1, x2 - x1)
-  print('h, h1, x2-x1 = ', h, h1, x2-x1)
+  #print('h, h1, x2-x1 = ', h, h1, x2-x1)
 
   nok = nbad = 0
 
@@ -171,7 +171,7 @@ def odeint(ystart, x1, x2, h1):
         kount += 1
       return ystart, xp, yp, nok, nbad
     
-    print('x, hnext, hmin = ', x, hnext, hmin)
+    #print('x, hnext, hmin = ', x, hnext, hmin)
     
     if abs(hnext) <= hmin:
       raise ValueError("Step size too small in odeint")
@@ -227,6 +227,8 @@ for j in range(kmax):
   y1[j] = yp[0, j]
   y2[j] = yp[1, j]
   y3[j] = yp[2, j]
+  
+print('kmax = ', kmax)
 
 plt.plot(y1, y3, linewidth = 0.5)
 plt.scatter(y1, y3, s = 1, color = 'r')

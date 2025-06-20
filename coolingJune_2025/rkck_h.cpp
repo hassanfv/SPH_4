@@ -1,6 +1,6 @@
 
 
-void rkck_h(float *y, float *dydx, const float x, const float h, float *yout, float *yerr,
+void rkck_h(float *y, float *dydx, const float x, const float h, float *yout, float *yerr, int &n,
 	void derivs(const float, float*, float*))
 {
   const float a2=0.2, a3=0.3, a4=0.6, a5=1.0, a6=0.875,
@@ -14,7 +14,7 @@ void rkck_h(float *y, float *dydx, const float x, const float h, float *yout, fl
 		
 	int i;
 
-	int n = y.size();
+	//int n = y.size();
 	float ak2[n], ak3[n], ak4[n], ak5[n], ak6[n], ytemp[n];
 	
 	for (i=0;i<n;i++)

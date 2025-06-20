@@ -11,4 +11,6 @@ errmax = 0.09
 
 htemp = SAFETY * h * errmax**PSHRNK
 
-print(htemp)
+print()
+print('X = ', h * (0.8)**(0.2))
+print()

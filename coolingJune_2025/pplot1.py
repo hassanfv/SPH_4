@@ -11,6 +11,7 @@ y = df["y"]
 
 #plt.figure(figsize = (16, 12))
 
-plt.scatter(x, y, c = 'k', s = 3)
+plt.plot(x, y, c = 'k')
+plt.scatter(x, y, c = 'r', s = 30)
 plt.show()
 

@@ -6,7 +6,7 @@ using namespace std;
 
 
 const int nvar = 3; // Lorenz chaotic problem !
-const int nstep = 1000;
+const int nstep = 4000;
 
 float sigma = 10.0;
 float beta = 8.0 / 3.0;
@@ -106,9 +106,9 @@ int main()
 
   float y0[3] = {-8.0, 8.0, 27.0};
   const float x1 = 0.0;
-  const float x2 = 10.0;
+  const float x2 = 100.0;
   
-   auto start = std::chrono::high_resolution_clock::now();
+  auto start = std::chrono::high_resolution_clock::now();
   
   rkdumb_h(y0, x1, x2, nvar, nstep, derivs);
   
@@ -123,7 +123,7 @@ int main()
   
   for (int j = 0; j < nstep+1; j++)
   {
-    int n_row_1 = 1;
+    int n_row_1 = 0;
     int n_row_2 = 2;
     outfile << y_p[n_row_1 * (nstep+1) + j] << "," << y_p[n_row_2 * (nstep+1) + j] << endl;
   }
