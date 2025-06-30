@@ -45,7 +45,7 @@ plt.legend()
 plt.grid(True)
 plt.tight_layout()
 
-plt.savefig('python_ca_cpp.png', dpi = 200, bbox_inches = 'tight')
+plt.savefig('python_and_cpp.png', dpi = 200, bbox_inches = 'tight')
 
 plt.show()
 
