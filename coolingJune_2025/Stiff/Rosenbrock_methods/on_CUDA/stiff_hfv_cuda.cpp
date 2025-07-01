@@ -6,13 +6,6 @@
 using namespace std;
 
 
-const int nvar = 3; // see derivs_s !
-const int kmax = 4000;
-const float dxsav = 0.0001f;
-
-const int MAXSTP = 10000; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-const float TINY = 1.0e-30;
-
 int kount;
 
 float *x_p; // Declare globally
@@ -137,8 +130,8 @@ void derivs(const float x, float *y, float *dydx)
 
 
 //----- stiff
-void stiff(float *y, float *dydx, float &x, const float htry, // htry Not by reference !!! Is that OK ????
-	const float eps, float *yscal, float &hdid, float &hnext, int n, // Note that I added n (n is actually nvar)!!
+void stiff(float *y, float *dydx, float &x, const float htry,
+	const float eps, float *yscal, float &hdid, float &hnext, int n,
 	void derivs(const float, float *, float *))
 {
 	const float SAFETY=0.9,GROW=1.5,PGROW= -0.25,SHRNK=0.5;
@@ -153,21 +146,19 @@ void stiff(float *y, float *dydx, float &x, const float htry, // htry Not by ref
 	int i,j,jtry;
 	float d,errmax,h,xsav;
 
-	//int n=y.size();
-	float *a = new float[n * n]; // Mat_DP a(n,n);
-	float *dfdy = new float[n * n]; // Mat_DP dfdy(n,n);
+	float *a = new float[n * n];
+	float *dfdy = new float[n * n];
 	
-	int *indx = new int[n]; // Vec_INT indx(n);
+	int *indx = new int[n];
 	
-  // Vec_DP dfdx(n),dysav(n),err(n),ysav(n),g1(n),g2(n),g3(n),g4(n);
-	float *dfdx = new float[n]; // Vec_DP dfdx(n)
-	float *dysav = new float[n]; // Vec_DP dysav(n)
-	float *err = new float[n]; // Vec_DP err(n)
-	float *ysav = new float[n]; // Vec_DP ysav(n)
-	float *g1 = new float[n]; // Vec_DP g1(n)
-	float *g2 = new float[n]; // Vec_DP g2(n)
-	float *g3 = new float[n]; // Vec_DP g3(n)
-	float *g4 = new float[n]; // Vec_DP g4(n)
+	float *dfdx = new float[n];
+	float *dysav = new float[n];
+	float *err = new float[n];
+	float *ysav = new float[n];
+	float *g1 = new float[n];
+	float *g2 = new float[n];
+	float *g3 = new float[n];
+	float *g4 = new float[n];
 
 	xsav=x;
 	for (i=0;i<n;i++)
@@ -213,7 +204,7 @@ void stiff(float *y, float *dydx, float &x, const float htry, // htry Not by ref
 		}
 		
 		x=xsav+h;
-		if (x == xsav) cout << "stepsize not significant in stiff" << endl;
+		if (x == xsav) cout << "stepsize not significant in stiff function!" << endl;
 		
 		errmax=0.0f;
 		for (i=0;i<n;i++) errmax=max(errmax,fabs(err[i]/yscal[i]));
@@ -240,21 +231,20 @@ void stiff(float *y, float *dydx, float &x, const float htry, // htry Not by ref
 			h=(h >= 0.0f ? max(hnext,SHRNK*h) : min(hnext,SHRNK*h));
 		}
 	}
-	cout << "exceeded MAXTRY in stiff" << endl;
+	cout << "exceeded MAXTRY in stiff function !" << endl;
 }
 
 
 //----- odeint_h
 void odeint_h(float *ystart, const float x1, const float x2, const float eps,
-	const float htry, const float hmin, int &nok, int &nbad, // htry is h1 in my other script if you are confused one day !!!!!!
+	const float htry, const float hmin, int &nok, int &nbad, float dxsav, int nvar, int kmax, // htry is h1 in my other script if you are confused one day !!!!!!
 	void derivs(const float, float*, float*))
 {
-	//const int MAXSTP = 10000;  // defined globally !
-	//const float TINY = 1.0e-30; // defined globally !
+	const int MAXSTP = 10000;
+	const float TINY = 1.0e-30;
 	
 	float xsav, x, hnext, hdid, h;
 
-	// int nvar=ystart.size(); // Will be set as a global variable !
 	float yscal[nvar], y[nvar], dydx[nvar];
 
 	x = x1;
@@ -265,38 +255,20 @@ void odeint_h(float *ystart, const float x1, const float x2, const float eps,
 
 	for (i= 0; i < nvar; i++) y[i] = ystart[i];
 
-	// Note that xsav is the x of the last save !
-	if (kmax > 0) xsav = x - dxsav * 2.0f; // This is a trick to allow us to save the first initial starting point.
-
 	for (nstp = 0;nstp < MAXSTP; nstp++) 
 	{
 		derivs(x, y, dydx);
 		for (i = 0;i < nvar; i++)
 			yscal[i] = fabs(y[i]) + fabs(dydx[i] * h) + TINY;
 
-		if (kmax > 0 && kount < kmax - 1 && fabs(x - xsav) > fabs(dxsav)) 
-		{
-			for (i = 0; i < nvar; i++) y_p[i * (kmax + 1) + kount] = y[i];
-			x_p[kount++] = x;
-			xsav = x;
-		}
-
 		if ((x+h-x2)*(x+h-x1) > 0.0f) h=x2-x;
 
-		//rkqs(y, dydx, x, h, eps, yscal, hdid, hnext, nvar, derivs);
 		stiff(y, dydx, x, h, eps, yscal, hdid, hnext, nvar, derivs);
-
-		if (hdid == h) ++nok; else ++nbad;
 
 		if ((x - x2) * (x2 - x1) >= 0.0f)
 		{
 			for (i = 0; i < nvar; i++) ystart[i] = y[i];
 
-			if (kmax != 0)
-			{
-				for (i = 0; i < nvar; i++) y_p[i * (kmax + 1) + kount] = y[i];
-				x_p[kount++] = x;
-			}
 			return;
 		}
 		if (fabs(hnext) <= hmin) cout <<"Step size too small in odeint" <<endl;
@@ -310,10 +282,12 @@ void odeint_h(float *ystart, const float x1, const float x2, const float eps,
 int main()
 {
 
-  x_p = new float[kmax + 1]; // Declare globally - see above.
-  y_p = new float[nvar * (kmax + 1)]; // Declare globally - see above.
+  const int nvar = 3; // see derivs_s !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  const int kmax = 4000; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 	float y0[3] = {1.0f, 1.0f, 0.0f};
+	cout << "y0 = " << y0[0] << ", " << y0[1] << ", " << y0[2] << endl;
+	
 	// Note that here x1 and x2 represent time !
 	const float x1 = 0.0f; // Initial time !!!!!!!!!!!!!!!!!!!!!!!
 	const float x2 = 50.0f; // Final time !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -321,38 +295,21 @@ int main()
 
 	float eps = 1e-4f;   // THIS affects the execution time !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	float hmin = 1e-6f;  //!!!!!!!!!!!!!!!!!!!!!!!!!! To be adjusted for each problem !!!!!!!!!!!!!!!!!!!!!!!!!!
+	const float dxsav = 0.0001f; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 	int nok = 0;
 	int nbad = 0;
 
 	auto start = chrono::high_resolution_clock::now();
 
-	odeint_h(y0, x1, x2, eps, htry, hmin, nok, nbad, derivs);
+	odeint_h(y0, x1, x2, eps, htry, hmin, nok, nbad, dxsav, nvar, kmax, derivs);
 
 	auto end = chrono::high_resolution_clock::now();
 	chrono::duration<double> elapsed = end - start;
 	cout << "Elapsed time: " << elapsed.count() << " seconds" << endl;
 	
-	cout << "kount = " << kount << endl;
-	
-	ofstream outfile("outX.csv"); // use pplot.py to plot the result !
-  
-	outfile << "x,y" << endl;
+	cout << "y = " << y0[0] << ", " << y0[1] << ", " << y0[2] << endl;
 
-	for (int j = 0; j < kount; j++)
-	{
-		int n_row_1 = 1;
-		int n_row_2 = 2;
-		outfile << y_p[n_row_1 * (kmax+1) + j] << "," << y_p[n_row_2 * (kmax+1) + j] << endl;
-	}
-
-	outfile.close();
-	
-	cout << "y = " << y0[0] << ", " << y0[1] << ", " << y0[2] << endl; // The final evolved y values!
-	
-	delete[] x_p;
-	delete[] y_p;
-	
 	
 }
 
