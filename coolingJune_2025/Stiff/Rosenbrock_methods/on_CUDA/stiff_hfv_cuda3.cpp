@@ -118,7 +118,7 @@ void jacobn_s(float *y, float *dfdx, float *dfdy, int n) // Note: dfdy is a Matr
 }
 
 //----- derivs
-void derivs(const float x, float *y, float *dydx)
+void derivs(float *y, float *dydx)
 {
 	dydx[0] = -0.013f*y[0]-1000.0f*y[0]*y[2];
 	dydx[1] = -2500.0f*y[1]*y[2];
@@ -129,7 +129,7 @@ void derivs(const float x, float *y, float *dydx)
 //----- stiff
 void stiff(float *y, float *dydx, float &x, const float htry,
 	const float eps, float *yscal, float &hdid, float &hnext, int n,
-	void derivs(const float, float *, float *))
+	void derivs(float *, float *))
 {
 	const float SAFETY=0.9f,GROW=1.5f,PGROW= -0.25f,SHRNK=0.5f;
 	const float PSHRNK=(-1.0f/3.0f),ERRCON=0.1296f;
@@ -164,7 +164,7 @@ void stiff(float *y, float *dydx, float &x, const float htry,
 		dysav[i]=dydx[i];
 	}
 	
-	jacobn_s(xsav,ysav,dfdx,dfdy, n); // n is nvar
+	jacobn_s(ysav,dfdx,dfdy, n); // n is nvar
 	
 	h=htry;
 	for (jtry=0;jtry<MAXTRY;jtry++)
@@ -181,14 +181,14 @@ void stiff(float *y, float *dydx, float &x, const float htry,
 		for (i=0;i<n;i++)
 			y[i]=ysav[i]+A21*g1[i];
 		x=xsav+A2X*h;
-		derivs(x,y,dydx);
+		derivs(y,dydx);
 		for (i=0;i<n;i++)
 			g2[i]=dydx[i]+h*C2X*dfdx[i]+C21*g1[i]/h;
 		lubksb(a,indx,g2,n);
 		for (i=0;i<n;i++)
 			y[i]=ysav[i]+A31*g1[i]+A32*g2[i];
 		x=xsav+A3X*h;
-		derivs(x,y,dydx);
+		derivs(y,dydx);
 		for (i=0;i<n;i++)
 			g3[i]=dydx[i]+h*C3X*dfdx[i]+(C31*g1[i]+C32*g2[i])/h;
 		lubksb(a,indx,g3,n);
@@ -235,7 +235,7 @@ void stiff(float *y, float *dydx, float &x, const float htry,
 //----- odeint_h
 void odeint_h(float *ystart, const float x1, const float x2, const float eps,
 	const float htry, const float hmin, int nvar, // htry is h1 in my other script if you are confused one day !!!!!!
-	void derivs(const float, float*, float*))
+	void derivs(float*, float*))
 {
 	const int MAXSTP = 10000;
 	const float TINY = 1.0e-30f;
@@ -253,7 +253,7 @@ void odeint_h(float *ystart, const float x1, const float x2, const float eps,
 
 	for (nstp = 0;nstp < MAXSTP; nstp++) 
 	{
-		derivs(x, y, dydx);
+		derivs(y, dydx);
 		for (i = 0;i < nvar; i++)
 			yscal[i] = fabs(y[i]) + fabs(dydx[i] * h) + TINY;
 
