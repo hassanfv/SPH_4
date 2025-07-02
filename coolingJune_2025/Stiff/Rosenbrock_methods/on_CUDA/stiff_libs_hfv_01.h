@@ -1,6 +1,64 @@
 #ifndef STIFFLIBS_H
 #define STIFFLIBS_H
 
+#define CHECK_CUDA(call) { \
+    cudaError_t err = call; \
+    if (err != cudaSuccess) { \
+        std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << ": " \
+                  << cudaGetErrorString(err) << std::endl; \
+        exit(EXIT_FAILURE); \
+    } \
+}
+
+//----- acquire_slot
+__device__ int acquire_slot(int* slot_status, int N) {
+    for (int i = 0; i < N; ++i) {
+        if (atomicCAS(&slot_status[i], 0, 1) == 0) {
+            return i; // got slot i
+        }
+    }
+    return -1; // no slot available right now
+}
+
+
+//----- release_slot
+__device__ void release_slot(int* slot_status, int slot_id) {
+    atomicExch(&slot_status[slot_id], 0);
+}
+
+
+
+//----- jacobn_s
+__device__ void jacobn_s(float *y, float *dfdx, float *dfdy, int n)
+{
+    // Assumes system size is exactly 3 (based on hardcoded entries)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    for (int i = 0; i < n; i++)
+        dfdx[i] = 0.0f;
+
+    // Fill Jacobian matrix dfdy (row-major order)
+    dfdy[0 * n + 0] = -0.013f - 1000.0f * y[2];
+    dfdy[0 * n + 1] = 0.0f;
+    dfdy[0 * n + 2] = -1000.0f * y[0];
+
+    dfdy[1 * n + 0] = 0.0f;
+    dfdy[1 * n + 1] = -2500.0f * y[2];
+    dfdy[1 * n + 2] = -2500.0f * y[1];
+
+    dfdy[2 * n + 0] = -0.013f - 1000.0f * y[2];
+    dfdy[2 * n + 1] = -2500.0f * y[2];
+    dfdy[2 * n + 2] = -1000.0f * y[0] - 2500.0f * y[1];
+}
+
+
+//----- derivs
+__device__ void derivs(float *y, float *dydx)
+{
+    dydx[0] = -0.013f * y[0] - 1000.0f * y[0] * y[2];
+    dydx[1] = -2500.0f * y[1] * y[2];
+    dydx[2] = -0.013f * y[0] - 1000.0f * y[0] * y[2] - 2500.0f * y[1] * y[2];
+}
+
+
 
 //----- ludcmp
 __device__ void ludcmp(float *a, int *indx, int n)
@@ -136,7 +194,7 @@ __device__ void stiff_d(float *y, float *dydx, float &x, const float htry, // we
     const float A2X=1.0f, A3X=3.0f/5.0f;
 
     int i, j, jtry;
-    float errmax, h
+    float errmax, h;
     float xsav = x;
 
     for (i = 0; i < n; i++)
@@ -145,7 +203,7 @@ __device__ void stiff_d(float *y, float *dydx, float &x, const float htry, // we
         dysav[i] = dydx[i];
     }
 
-    jacobn_s(xsav, ysav, dfdx, dfdy, n); // n is nvar.
+    jacobn_s(ysav, dfdx, dfdy, n); // n is nvar.
     h = htry;
 
     for (jtry = 0; jtry < MAXTRY; jtry++) // Note: ysav is never overwritten so in every loop it has the initial values.
@@ -163,14 +221,14 @@ __device__ void stiff_d(float *y, float *dydx, float &x, const float htry, // we
         for (i = 0; i < n; i++) y[i] = ysav[i] + A21 * g1[i];
 
         x = xsav + A2X * h;
-        derivs(x, y, dydx, n);
+        derivs(y, dydx);
 
         for (i = 0; i < n; i++) g2[i] = dydx[i] + h * C2X * dfdx[i] + C21 * g1[i] / h;
         lubksb(a, indx, g2, n);
         for (i = 0; i < n; i++) y[i] = ysav[i] + A31 * g1[i] + A32 * g2[i];
 
         x = xsav + A3X * h;
-        derivs(x, y, dydx, n);
+        derivs(y, dydx);
 
         for (i = 0; i < n; i++) g3[i] = dydx[i] + h * C3X * dfdx[i] + (C31 * g1[i] + C32 * g2[i]) / h;
         lubksb(a, indx, g3, n);
@@ -249,7 +307,7 @@ __global__ void odeint_d(float *y_c, float x1, float x2, float eps, float htry, 
     float *dfdy  = &dfdy_c[slot_id * nvar * nvar]; // 3D
     float *yscal = &yscal_c[slot_id * nvar];
     float *dydx  = &dydx_c[slot_id * nvar];
-    float *indx  = &indx_c[slot_id * nvar];
+    int *indx  = &indx_c[slot_id * nvar];
     float *dfdx  = &dfdx_c[slot_id * nvar];
     float *dysav = &dysav_c[slot_id * nvar];
     float *err   = &err_c[slot_id * nvar];
@@ -270,7 +328,7 @@ __global__ void odeint_d(float *y_c, float x1, float x2, float eps, float htry, 
     // in y each row represents one SPH particle and each column represent an ionization fraction or ionic abundance !
     for (int nstp = 0; nstp < MAXSTP; nstp++) 
     {
-      derivs(x, y, dydx, nvar, idx); // x--> scalar,  y--> N_part * nvar,   dydx--> N_part * nvar. Note: dydx is the starting pointer of the free slot!
+      derivs(y, dydx); // x--> scalar,  y--> N_part * nvar,   dydx--> N_part * nvar. Note: dydx is the starting pointer of the free slot!
       for (int i = 0; i < nvar; i++)
         yscal[i] = fabsf(y[i]) + fabsf(dydx[i] * h) + TINY; // Only y contains the whole 1,000,000 particles !
 

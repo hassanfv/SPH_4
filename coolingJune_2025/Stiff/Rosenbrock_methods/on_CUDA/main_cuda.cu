@@ -4,14 +4,14 @@
 #include "stiff_libs_hfv_01.h"
 #include <cuda_runtime.h>
 
-
+using namespace std;
 
 int main()
 {
   const int N_part = 1000; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   const int N_con = 128; //!!!!!!!!!!! number of concurrent access of the matrices a and dfdy !// Select efficiently. The higher the better !
-  float *h_slot_status = new int[N_con];
+  int *h_slot_status = new int[N_con];
   for (int i = 0; i < N_con; i++)
     h_slot_status[i] = 0;
   
@@ -72,8 +72,16 @@ int main()
 
   cudaDeviceSynchronize();
   
+  cudaMemcpy(h_y0, d_y0, N_part * n * sizeof(float), cudaMemcpyDeviceToHost);
   
+  int i = 0; // i is an SPH particle index.
   
+  float y0 = h_y0[i * n + 0];
+  float y1 = h_y0[i * n + 1];
+  float y2 = h_y0[i * n + 2];
   
-
+  cout << y0 << ", " << y1 << ", " << y2 << endl;
+  
 }
+
+
