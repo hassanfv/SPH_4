@@ -1,15 +1,9 @@
 
 
-__device__ void stiff_device(
-    float *y, float *dydx, float &x, const float htry,
-    const float eps, float *yscal, float &hdid, float &hnext, int n,
-    void (*derivs)(float, float*, float*),
-    void (*jacobn_s)(float, float*, float*, float*, int),
-    void (*ludcmp)(float*, int*, float&, int),
-    void (*lubksb)(float*, int*, float*, int),
-    float *a, float *dfdy, int *indx, float *dfdx, float *dysav,
-    float *err, float *ysav, float *g1, float *g2, float *g3, float *g4
-)
+__device__ void stiff_d(float *y, float *dydx, float &x, const float htry, // we use &x because x will b updated step by step !
+                        const float eps, float *yscal, float &hnext, int n, // n is nvar !
+                        float *a, float *dfdy, int *indx, float *dfdx, float *dysav,
+                        float *err, float *ysav, float *g1, float *g2, float *g3, float *g4, int idx) // idx is particle index !
 {
     const float SAFETY=0.9f,GROW=1.5f,PGROW=-0.25f,SHRNK=0.5f;
     const float PSHRNK=-1.0f/3.0f, ERRCON=0.1296f;
@@ -23,37 +17,41 @@ __device__ void stiff_device(
     const float A2X=1.0f, A3X=3.0f/5.0f;
 
     int i, j, jtry;
-    float d, errmax, h, xsav = x;
+    float errmax, h
+    float xsav = x;
 
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < n; i++)
+    {
         ysav[i] = y[i];
         dysav[i] = dydx[i];
     }
 
-    jacobn_s(xsav, ysav, dfdx, dfdy, n);
+    jacobn_s(xsav, ysav, dfdx, dfdy, n); // n is nvar.
     h = htry;
 
-    for (jtry = 0; jtry < MAXTRY; jtry++) {
-        for (i = 0; i < n; i++) {
+    for (jtry = 0; jtry < MAXTRY; jtry++) // Note: ysav is never overwritten so in every loop it has the initial values.
+    {
+        for (i = 0; i < n; i++)
+        {
             for (j = 0; j < n; j++) a[i * n + j] = -dfdy[i * n + j];
             a[i * n + i] += 1.0f / (GAM * h);
         }
 
-        ludcmp(a, indx, d, n);
+        ludcmp(a, indx, n);
 
         for (i = 0; i < n; i++) g1[i] = dysav[i] + h * C1X * dfdx[i];
         lubksb(a, indx, g1, n);
         for (i = 0; i < n; i++) y[i] = ysav[i] + A21 * g1[i];
 
         x = xsav + A2X * h;
-        derivs(x, y, dydx);
+        derivs(x, y, dydx, n);
 
         for (i = 0; i < n; i++) g2[i] = dydx[i] + h * C2X * dfdx[i] + C21 * g1[i] / h;
         lubksb(a, indx, g2, n);
         for (i = 0; i < n; i++) y[i] = ysav[i] + A31 * g1[i] + A32 * g2[i];
 
         x = xsav + A3X * h;
-        derivs(x, y, dydx);
+        derivs(x, y, dydx, n);
 
         for (i = 0; i < n; i++) g3[i] = dydx[i] + h * C3X * dfdx[i] + (C31 * g1[i] + C32 * g2[i]) / h;
         lubksb(a, indx, g3, n);
@@ -68,17 +66,19 @@ __device__ void stiff_device(
 
         x = xsav + h;
         errmax = 0.0f;
-        for (i = 0; i < n; i++) {
+        for (i = 0; i < n; i++)
+        {
             float e = fabsf(err[i] / yscal[i]);
             if (e > errmax) errmax = e;
         }
 
         errmax /= eps;
-        if (errmax <= 1.0f) {
-            hdid = h;
+        if (errmax <= 1.0f)
+        {
             hnext = (errmax > ERRCON ? SAFETY * h * powf(errmax, PGROW) : GROW * h);
             return;
-        } else {
+        } else
+        {
             hnext = SAFETY * h * powf(errmax, PSHRNK);
             h = (h >= 0.0f ? fmaxf(hnext, SHRNK * h) : fminf(hnext, SHRNK * h));
         }
