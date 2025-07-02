@@ -1,6 +1,8 @@
-
-
-
+%%writefile stiff_test.cu
+#include <iostream>
+#include <cstdio>
+#include "stiff_libs_hfv_01.h"
+#include <cuda_runtime.h>
 
 
 
@@ -8,12 +10,12 @@ int main()
 {
   const int N_part = 1000; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  const int N_con = 32; //!!!!!!!!!!! number of concurrent access of the matrices a and dfdy !// Select efficiently. The higher the better !
+  const int N_con = 128; //!!!!!!!!!!! number of concurrent access of the matrices a and dfdy !// Select efficiently. The higher the better !
   float *h_slot_status = new int[N_con];
   for (int i = 0; i < N_con; i++)
     h_slot_status[i] = 0;
   
-  const int n = 3; // !!!!!!!!!!!!!!!!!! This is nvar !!!!!!!!!!!!!!!!!
+  const int n = 3; // !!!!!!!!!!!!!!!!!! This is nvar !!!!!!!!!!!!!!!!! Also modify the value for vv in ludcmp function !!!!!!
 
   const float x1 = 0.0f; // Initial time !!!!!!!!!!!!!!!!!!!!!!!
 	const float x2 = 50.0f; // Final time !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -68,7 +70,7 @@ int main()
   odeint_d<<<nBlocksPerGrid, nThreadsPerBlock>>>(d_y0, x1, x2, eps, htry, hmin, n, d_dydx, d_yscal, d_a, d_dfdy, d_indx, d_dfdx, d_dysav,
                                                  d_err, d_ysav, d_g1, d_g2, d_g3, d_g4, d_slot_status, N_con, N_part); // n is nvar !
 
-  
+  cudaDeviceSynchronize();
   
   
   
