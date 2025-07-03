@@ -131,6 +131,12 @@ def jfnk(F, x0, tol=1e-8, max_iter=20):
     
     return x
 
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#!!!!!! Note that our system of diferential equations is defned in the F(x) function above !!!!!
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# The goal is to convert it to C++ and see how long one iteration with 100 ODEs take !!!!!!!!!!!
+
+
 # Solve with proper initialization
 print("Solving with fully debugged custom GMRES...")
 x0 = np.array([1.0, 1.0])
