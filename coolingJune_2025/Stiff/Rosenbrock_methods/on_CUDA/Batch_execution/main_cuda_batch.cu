@@ -1,8 +1,8 @@
 %%writefile stiff_test.cu
 #include <iostream>
 #include <cstdio>
-#include "diff_jacob_01.h"
-#include "stiff_libs_hfv_02.h"
+#include "diff_jacob_batch_01.h"
+#include "stiff_libs_hfv_batch_01.h"
 #include <cuda_runtime.h>
 #include <chrono>
 
@@ -65,14 +65,25 @@ int main()
   CHECK_CUDA(cudaMemcpy(d_slot_status, h_slot_status, N_con * sizeof(int), cudaMemcpyHostToDevice));
   CHECK_CUDA(cudaMemcpy(d_y0, h_y0, N_part * n * sizeof(float), cudaMemcpyHostToDevice));
 
+
+
   int nThreadsPerBlock = 256;
-  int nBlocksPerGrid = (N_part + nThreadsPerBlock - 1) / nThreadsPerBlock; // automate it !!
+  //int nBlocksPerGrid = (N_part + nThreadsPerBlock - 1) / nThreadsPerBlock; // automate it !!
   
   auto start = chrono::high_resolution_clock::now();
-  // the final evolved y will be overwritten in d_y0 !
-  odeint_d<<<nBlocksPerGrid, nThreadsPerBlock>>>(d_y0, x1, x2, eps, htry, hmin, n, d_dydx, d_yscal, d_a, d_dfdy, d_indx, d_dfdx, d_dysav,
-                                                 d_err, d_ysav, d_g1, d_g2, d_g3, d_g4, d_slot_status, N_con, N_part); // n is nvar !
+  
+  //************** Batch running of the Kernel ****************
+  for (int i = 0; i < N_part; i += N_con)
+  {
+    int N_batch = min(N_con, N_part - i); // last batch might be smaller.
+    
+    odeint_d<<<(N_batch + nThreadsPerBlock - 1)/nThreadsPerBlock, nThreadsPerBlock>>>(d_y0 + i * n, x1, x2, eps, htry, hmin, n, d_dydx, d_yscal, d_a,
+                                                                                      d_dfdy, d_indx, d_dfdx, d_dysav, d_err, d_ysav, d_g1, d_g2, d_g3,
+                                                                                      d_g4, d_slot_status, N_batch); // n is nvar !
+  }
+  //***********************************************************
   cudaDeviceSynchronize();
+  
   auto end = chrono::high_resolution_clock::now();
   chrono::duration<double> elapsed = end - start;
   cout << "Elapsed time: " << elapsed.count() << " seconds" << endl;

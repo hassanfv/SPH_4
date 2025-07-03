@@ -1,8 +1,8 @@
 %%writefile stiff_test.cu
 #include <iostream>
 #include <cstdio>
-#include "diff_jacob_01.h"
-#include "stiff_libs_hfv_02.h"
+#include "diff_jacob_01_large_n.h"
+#include "stiff_libs_hfv_02_large_n.h"
 #include <cuda_runtime.h>
 #include <chrono>
 
@@ -17,10 +17,10 @@ int main()
   for (int i = 0; i < N_con; i++)
     h_slot_status[i] = 0;
   
-  const int n = 3; // !!!!!!!!!!!!!!!!!! This is nvar !!!!!!!!!!!!!!!!! Also modify the value for vv in ludcmp function !!!!!!
+  const int n = 10; // !!!!!!!!!!!!!!!!!! This is nvar !!!!!!!!!!!!!!!!! Also modify the value for vv in ludcmp function !!!!!!
 
   const float x1 = 0.0f; // Initial time !!!!!!!!!!!!!!!!!!!!!!!
-	const float x2 = 50.0f; // Final time !!!!!!!!!!!!!!!!!!!!!!!!!
+	const float x2 = 5.0f; // Final time !!!!!!!!!!!!!!!!!!!!!!!!!
 	float eps = 1e-4f;   // THIS affects the execution time !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	float htry = 2.9e-4f; // Step size !!!!!!!!!!!!!!!!!!!!!!!!
 	float hmin = 1e-6f;  //!!!!!!!!!!!!!!!!!!!!!!!!!! To be adjusted for each problem !!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -33,7 +33,14 @@ int main()
   {
     h_y0[i * n + 0] = 1.0f; // e.g. 1.0f will be replaced by nHII or nHeI of particle i !
     h_y0[i * n + 1] = 1.0f;
-    h_y0[i * n + 2] = 0.0f;
+    h_y0[i * n + 2] = 1.0f;
+    h_y0[i * n + 3] = 1.0f;
+    h_y0[i * n + 4] = 1.0f;
+    h_y0[i * n + 5] = 1.0f;
+    h_y0[i * n + 6] = 1.0f;
+    h_y0[i * n + 7] = 1.0f;
+    h_y0[i * n + 8] = 1.0f;
+    h_y0[i * n + 9] = 1.0f;
   }
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
@@ -84,8 +91,12 @@ int main()
   float y0 = h_y0[i * n + 0];
   float y1 = h_y0[i * n + 1];
   float y2 = h_y0[i * n + 2];
+  float y3 = h_y0[i * n + 3];
+  float y4 = h_y0[i * n + 4];
+  float y5 = h_y0[i * n + 5];
+  float y6 = h_y0[i * n + 6];
   
-  cout << y0 << ", " << y1 << ", " << y2 << endl;
+  cout << y0 << ", " << y1 << ", " << y2 << ", " << y3 << ", " << y4 << ", " << y5 << ", " << y6 << endl;
   
 }
 

@@ -1,8 +1,7 @@
 %%writefile stiff_test.cu
 #include <iostream>
 #include <cstdio>
-#include "diff_jacob_01.h"
-#include "stiff_libs_hfv_02.h"
+#include "stiff_libs_hfv_01.h"
 #include <cuda_runtime.h>
 #include <chrono>
 
@@ -10,9 +9,9 @@ using namespace std;
 
 int main()
 {
-  const int N_part = 100000; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  const int N_part = 1000; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  const int N_con = 5000; //!!!!!!!!!!! number of concurrent access of the matrices a and dfdy !// Select efficiently. The higher the better !
+  const int N_con = 128; //!!!!!!!!!!! number of concurrent access of the matrices a and dfdy !// Select efficiently. The higher the better !
   int *h_slot_status = new int[N_con];
   for (int i = 0; i < N_con; i++)
     h_slot_status[i] = 0;
